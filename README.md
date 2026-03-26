@@ -4,7 +4,7 @@
 
 ## 项目简介
 
-本仓库是摩尔线程公司对 PaddlePaddle 深度学习框架进行深度适配的代码仓库，支持在摩尔线程 GPU S5000 上进行模型训练和推理。通过自定义设备接口（Custom Device），实现了 PaddlePaddle 框架与摩尔线程 GPU 硬件的无缝对接。
+paddle_musa是摩尔线程公司对 PaddlePaddle 深度学习框架进行深度适配的代码仓库，支持在摩尔线程 GPU S5000 上进行模型训练和推理。通过自定义设备接口（Custom Device），实现了 PaddlePaddle 框架与摩尔线程 GPU 硬件的无缝对接。
 
 ## 使用方式
 
