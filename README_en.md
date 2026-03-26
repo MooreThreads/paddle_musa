@@ -1,4 +1,4 @@
-# PaddlePaddle MUSA Version
+# Paddle MUSA
 
 English | [简体中文](./README.md)
 
