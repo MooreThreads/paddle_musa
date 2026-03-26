@@ -1,0 +1,99 @@
+// Reserved. Copyright (c) 2025 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Modifications:
+// Copyright (c) 2025 Moore Threads Technology Co., Ltd("Moore Threads"). All
+// rights reserved.
+// - [register musa backend]
+
+#include "paddle/phi/kernels/scale_kernel.h"
+
+#include "paddle/phi/backends/gpu/gpu_context.h"
+#include "paddle/phi/core/kernel_registry.h"
+#include "paddle/phi/kernels/funcs/elementwise_base.h"
+
+namespace phi {
+
+template <typename DataT, typename ParamT>
+struct ScaleFunctor {
+  ParamT bias;
+  ParamT scale;
+  bool bias_after_scale;
+
+  ScaleFunctor(ParamT scale_data, ParamT bias_data, bool is_bias_after_scale)
+      : bias(bias_data),
+        scale(scale_data),
+        bias_after_scale(is_bias_after_scale) {}
+
+  __device__ __forceinline__ DataT operator()(const DataT x) const {
+    if (bias_after_scale) {
+      return static_cast<DataT>(scale * static_cast<ParamT>(x) + bias);
+    } else {
+      return static_cast<DataT>(scale * (static_cast<ParamT>(x) + bias));
+    }
+  }
+};
+
+template <typename T, typename Context>
+void ScaleKernel(const Context& dev_ctx,
+                 const DenseTensor& x,
+                 const Scalar& scale,
+                 const Scalar& bias,
+                 bool bias_after_scale,
+                 DenseTensor* out) {
+  using MT = typename phi::dtype::MPTypeTrait<T>::Type;
+  std::vector<const DenseTensor*> inputs;
+  std::vector<DenseTensor*> outputs;
+  inputs.emplace_back(&x);
+  outputs.emplace_back(out);
+  dev_ctx.template Alloc<T>(out);
+  if (x.numel() <= 0 || (!x.IsInitialized())) {
+    return;
+  }
+  phi::funcs::ElementwiseKernel<T>(
+      dev_ctx,
+      inputs,
+      &outputs,
+      ScaleFunctor<T, MT>(scale.to<MT>(), bias.to<MT>(), bias_after_scale));
+}
+#ifdef _WIN32
+INSTANCE_SCALAR_KERNEL(int, GPUContext)
+INSTANCE_SCALAR_KERNEL(int64_t, GPUContext)
+INSTANCE_SCALAR_KERNEL(float, GPUContext)
+INSTANCE_SCALAR_KERNEL(double, GPUContext)
+INSTANCE_SCALAR_KERNEL(phi::float16, GPUContext)
+INSTANCE_SCALAR_KERNEL(int16_t, GPUContext)
+INSTANCE_SCALAR_KERNEL(uint8_t, GPUContext)
+INSTANCE_SCALAR_KERNEL(int8_t, GPUContext)
+#endif
+}  // namespace phi
+
+PD_CUSTOM_KERNEL_REGISTER(scale,
+                   musa,
+                   ALL_LAYOUT,
+                   phi::ScaleKernel,
+                   bool,
+                   float,
+                   double,
+                   phi::float16,
+                   phi::bfloat16,
+                   phi::float8_e4m3fn,
+                   phi::float8_e5m2,
+                   uint8_t,
+                   int8_t,
+                   int16_t,
+                   int,
+                   int64_t,
+                   phi::complex64,
+                   phi::complex128) {}
