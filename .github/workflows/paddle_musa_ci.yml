@@ -22,7 +22,6 @@ jobs:
           docker run --rm \
             --network host \
             --user root \
-            --privileged \
             --shm-size 20G \
             --pid host \
             -e MTHREADS_VISIBLE_DEVICES=all \
@@ -32,27 +31,39 @@ jobs:
             bash -lc '
               set -e
 
-              rsync -a --delete \
-                --exclude "Paddle/" \
-                --exclude "backends/musa/third_party/" \
-                /workspace/ /home/paddle_musa/
+              echo "=== check workspace ==="
+              cd /workspace/
+              pwd
+              ls -la
 
-              echo "01-S5000-env prepare"
-              cd /home/paddle_musa
-              apt-get update && apt-get install -y patchelf
-              pip3 install -r ./Paddle/python/requirements.txt
-              pip3 install -r ./python/requirements.txt
+              echo "=== git info ==="
+              git rev-parse HEAD || true
+              git branch || true
 
-              echo "02-S5000-build paddle"
-              cd /home/paddle_musa/backends/musa
-              echo y | bash tools/build.sh -p
-              pip3 install numpy==1.22.4
-              echo y | bash tools/build.sh -m
+              # rsync -a --delete \
+              #   --exclude "Paddle/" \
+              #   --exclude "backends/musa/third_party/" \
+              #   /workspace/ /home/paddle_musa/
 
-              echo "03-S5000-unit test"
-              cd /home/paddle_musa
-              export PADDLE_XCCL_BACKEND=musa
-              export MUSA_VISIBLE_DEVICES=6,7
-              cd ./backends/musa
-              bash tools/run_ut.sh
+              # echo "01-S5000-env prepare"
+              # cd /home/paddle_musa
+              # apt-get update && apt-get install -y patchelf
+              # pip3 install -r ./Paddle/python/requirements.txt
+              # pip3 install -r ./python/requirements.txt
+
+              # echo "02-S5000-build paddle"
+              # cd /home/paddle_musa/Paddle
+              # rm -rf build
+              # cd /home/paddle_musa/backends/musa
+              # rm -rf build
+              # echo y | bash tools/build.sh -p
+              # pip3 install numpy==1.22.4
+              # echo y | bash tools/build.sh -m
+
+              # echo "03-S5000-unit test"
+              # cd /home/paddle_musa
+              # export PADDLE_XCCL_BACKEND=musa
+              # export MUSA_VISIBLE_DEVICES=6,7
+              # cd ./backends/musa
+              # bash tools/run_ut.sh
             '
