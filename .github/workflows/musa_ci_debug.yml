@@ -1,0 +1,42 @@
+name: musa_ci_debug
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  debug:
+    runs-on: [self-hosted]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Basic Info
+        run: |
+          echo "branch: $GITHUB_REF"
+          echo "commit: $GITHUB_SHA"
+          hostname
+          pwd
+          ls -la
+
+      - name: Run CI container smoke
+        run: |
+          docker run --rm \
+            --network host \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            sh-harbor.mthreads.com/mt-ai/musa-paddle-dev:rc4.3.4-v3.3.0-ci-ph1 \
+            bash -lc '
+              echo "inside container"
+              hostname
+              pwd
+              ls -la
+
+              echo "python:"
+              python3 --version
+
+              echo "check paddle:"
+              python3 -c "import paddle; print(paddle.__version__)"
+            '
